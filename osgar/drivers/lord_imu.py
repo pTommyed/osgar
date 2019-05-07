@@ -5,23 +5,24 @@
 import struct
 
 
-def checksum(packet):
+def verify_checksum(packet):
     # 16-bit Fletcher Checksum Algorithm
     ch1, ch2 = 0, 0
-    for b in packet[2:]:
+    for b in packet[:-2]:
         ch1 += b
         ch2 += ch1
-    return ((ch1 << 8) & 0xFFFF) + (ch2 & 0xFFFF)
+    ret = ((ch1 << 8) & 0xFF00) + (ch2 & 0xFF)
+    assert packet[-2] == (ch1 & 0xFF), (hex(packet[-2]), hex(ch1 & 0xFF))
+    assert packet[-1] == (ch2 & 0xFF), (hex(packet[-1]), hex(ch2 & 0xFF))
+    return ret
 
 
 def get_packet(buf):
     try:
         i = buf.index(b'\x75\x65')
-        print(i)
         packet_size = buf[i + 3] + 4 + 2  # + header size + checksum
         packet = buf[i:i + packet_size]
-#        ch = checksum(packet)
-#        print(hex(ch))
+        verify_checksum(packet)
         return packet, buf[i + packet_size:]
     except ValueError:
         return b'', buf

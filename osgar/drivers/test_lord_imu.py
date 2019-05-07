@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from osgar.drivers.lord_imu import get_packet, checksum, parse_packet
+from osgar.drivers.lord_imu import get_packet, verify_checksum, parse_packet
 from osgar.bus import BusHandler
 
 
@@ -20,7 +20,13 @@ class LordIMUTest(unittest.TestCase):
 
     def test_checksum(self):
         packet = bytes.fromhex("7565 0C20 0D08 0103 1200 0A04 000A 0500 0A13 0A01 0511 000A 1000 0A01 000A 0200 0A03 000A D43D")
-        ch = checksum(packet)
-        print(hex(ch))
+        verify_checksum(packet)
+
+        ping = bytes.fromhex('7565 0102 0201 E0C6')
+        verify_checksum(ping)
+        #ping 0xe4c6
+        #replay: 7565 0104 04F1 0100 D56A
+        # set to idle: 7565 0102 0202 E1C7
+        # ping         7565 0102 0201 E0C6
 
 # vim: expandtab sw=4 ts=4
