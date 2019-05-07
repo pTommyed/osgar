@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from osgar.drivers.lord_imu import get_packet, checksum
+from osgar.drivers.lord_imu import get_packet, checksum, parse_packet
 from osgar.bus import BusHandler
 
 
@@ -15,6 +15,8 @@ class LordIMUTest(unittest.TestCase):
         self.assertTrue(packet.startswith(b'\x75\x65'), packet)
 #        print(packet.hex())
         self.assertEqual(len(packet), 42)
+
+        parse_packet(packet)
 
     def test_checksum(self):
         packet = bytes.fromhex("7565 0C20 0D08 0103 1200 0A04 000A 0500 0A13 0A01 0511 000A 1000 0A01 000A 0200 0A03 000A D43D")
