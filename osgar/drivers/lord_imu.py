@@ -43,7 +43,7 @@ def parse_packet(packet, verbose=False):
     # IMU Data Set (0x80)
     assert desc in [0x80, 0x82], hex(desc)
     i = 4
-    acc, gyro, mag = None, None, None
+    acc, gyro, mag, quat = None, None, None, None
     while i < packet_size - 2:
         field_length = packet[i]
         cmd = packet[i + 1]
@@ -69,6 +69,8 @@ def parse_packet(packet, verbose=False):
         elif desc == 0x82 and cmd == 0x03:
             # Orientation, Quaternion (0x82, 0x03)
             q0, q1, q2, q3, valid = struct.unpack_from('>ffffH', packet, i + 2)
+            if valid == 0x1:
+                quat = q0, q1, q2, q3
             if verbose:
                 print('quaterion', q0, q1, q2, q3, valid)
         elif desc == 0x82 and cmd == 0x0A:
@@ -97,7 +99,7 @@ def parse_packet(packet, verbose=False):
 
         i += field_length
 
-    return acc, gyro, mag
+    return acc, gyro, mag, quat
 
 
 class LordIMU(Node):
@@ -114,13 +116,16 @@ class LordIMU(Node):
             packet, self._buf = get_packet(self._buf)
             if packet is None:
                 break
-            acc, gyro, mag = parse_packet(packet)
+            acc, gyro, mag, quat = parse_packet(packet)
             if mag is not None:
                 yaw, pitch, roll = mag
                 # CF Euler Angles (0x80, 0x0C)
                 # Pitch, Roll, and Yaw (aircraft) values
                 # This is a three component vector containing the Roll, Pitch and Yaw angles 
                 # in radians.
-                self.publish('rotation', [int(round(math.degrees(x) * 100)) for x in [yaw, pitch, roll]])
+                self.publish('rotation', 
+                        [int(round(math.degrees(x) * 100)) for x in [yaw, pitch, roll]])
+            if quat is not None:
+                self.publish('orientation', list(quat))
         
 # vim: expandtab sw=4 ts=43DM-GX5-25
