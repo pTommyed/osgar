@@ -3,9 +3,9 @@
   "robot": {
     "modules": {
       "imu": {
-          "driver": "imu",
+          "driver": "lordimu",
           "in": ["raw"],
-          "out": ["orientation"],
+          "out": ["orientation", "rotation"],
           "init": {}
       },
       "imu_serial": {
