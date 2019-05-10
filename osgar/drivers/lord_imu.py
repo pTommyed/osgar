@@ -43,7 +43,7 @@ def parse_packet(packet, verbose=False):
     # IMU Data Set (0x80)
     assert desc in [0x80, 0x82], hex(desc)
     i = 4
-    acc, gyro, mag, quat = None, None, None, None
+    acc, gyro, euler, quat = None, None, None, None
     while i < packet_size - 2:
         field_length = packet[i]
         cmd = packet[i + 1]
@@ -76,6 +76,8 @@ def parse_packet(packet, verbose=False):
         elif desc == 0x82 and cmd == 0x0A:
             # Attitude Uncertainty, Euler Angles (0x82, 0x0A)
             roll, pitch, yaw, valid = struct.unpack_from('>fffH', packet, i + 2)
+            if valid == 0x1:
+                euler = yaw, pitch, roll
             if verbose:
                 print('euler', roll, pitch, yaw, valid)
         elif desc == 0x82 and cmd == 0x0D:
@@ -99,7 +101,7 @@ def parse_packet(packet, verbose=False):
 
         i += field_length
 
-    return acc, gyro, mag, quat
+    return acc, gyro, euler, quat
 
 
 class LordIMU(Node):
@@ -116,11 +118,9 @@ class LordIMU(Node):
             packet, self._buf = get_packet(self._buf)
             if packet is None:
                 break
-            acc, gyro, mag, quat = parse_packet(packet)
-            if mag is not None:
-                yaw, pitch, roll = mag
-                # CF Euler Angles (0x80, 0x0C)
-                # Pitch, Roll, and Yaw (aircraft) values
+            acc, gyro, euler, quat = parse_packet(packet)
+            if euler is not None:
+                yaw, pitch, roll = euler
                 # This is a three component vector containing the Roll, Pitch and Yaw angles 
                 # in radians.
                 self.publish('rotation', 
